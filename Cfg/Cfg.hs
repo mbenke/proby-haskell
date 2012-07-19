@@ -117,16 +117,13 @@ first :: (Eq t, Eq nt)
       => Cfg t nt      -- ^ Grammar
       -> RHS t nt      -- ^ Sequence of grammar symbols
       -> [Symb t nt]           -- ^ 'first' set 
-first g sy = first' g [] sy
-
-first' :: (Eq t, Eq nt) => Cfg t nt -> [Symb t nt] -> RHS t nt -> [Symb t nt]
-first' g _ []                        = []
-first' g v (h:t) | h `is_terminal` g = [h] 
-                 | h `elem` v        = first' g v t
-                 | nullable_nt g h   =  visit t  
-                                       ++ concatMap visit (rhs_nt g h) 
-                 | otherwise         = concatMap visit (rhs_nt g h)
-  where visit = first' g (h:v)
+first g sy = go [] sy where
+  go _ []                        = []
+  go v (h:t) | h `is_terminal` g = [h] 
+             | h `elem` v        = go v t
+             | nullable_nt g h   = go (h:v) t  ++ goNT v h
+             | otherwise         = goNT v h
+  goNT v h = concatMap (go (h:v)) (rhs_nt g h)
 
 first_nt :: (Eq nt, Eq t) 
         => Cfg t nt                -- ^ Grammar
@@ -135,6 +132,38 @@ first_nt :: (Eq nt, Eq t)
 --first_nt g nt = nub $ concat $ map (first g) (rhs_nt g nt)
 -- MB why not:
 first_nt g nt = first g [nt]
+
+-- | Computes the set of terminal symbols that can appear immediately to the 
+--   right of a given nonterminal symbol in some sentential form
+
+follow :: (Eq t, Eq nt) 
+       => Cfg t nt        -- ^ Grammar
+       -> Symb t nt              -- ^ Nonterminal symbol
+       -> [Symb t nt]             -- ^ 'follow' set
+follow g nt = follow' g [] nt
+
+follow' :: (Eq t, Eq nt) => Cfg t nt -> [Symb t nt] -> Symb t nt -> [Symb t nt]
+follow' g v nt | nt `elem` v = [] 
+               | otherwise   = all_suffices
+  where all_suffices = follow_prods_with_nt g (nt:v) nt (prods_rhs_with_nt g nt)
+
+follow_prods_with_nt :: (Eq t, Eq nt) => Cfg t nt -> [Symb t nt] -> Symb t nt -> [[Symb t nt]] -> [Symb t nt]
+follow_prods_with_nt g v nt l = nub $ concat $ map (suffices_after_sy g v nt) l 
+
+suffices_after_sy :: (Eq t, Eq nt) => Cfg t nt -> [Symb t nt] -> Symb t nt -> [Symb t nt] -> [Symb t nt]
+suffices_after_sy g v sy p = go rhs
+  where 
+        go []    = [] 
+        go (NT h:t) | sy == (NT h) = f g v lhs t ++ go t
+                    | otherwise    = go t
+        go (T h:t)  = go t
+	go (_:t) = go t
+        lhs = lhs_prod p
+	rhs = rhs_prod p
+
+f :: (Eq t, Eq nt) => Cfg t nt -> [Symb t nt] -> Symb t nt -> RHS t nt -> [Symb t nt]
+f g v lhs rhs | nullable g [] rhs  = first g rhs ++ follow' g v lhs
+              | otherwise          = first g rhs
 
 -- end of borrowed
 type Sym = Symb Char Char
