@@ -114,17 +114,22 @@ nullable_nt g nt = nullable_nt' g [] nt
 -- | Computes the set of terminal symbols that begin the strings derived from the given
 --   sequence of symbols
 
+
 first :: (Eq t, Eq nt) 
       => Cfg t nt      -- ^ Grammar
       -> RHS t nt      -- ^ Sequence of grammar symbols
       -> [Symb t nt]           -- ^ 'first' set 
-first g sy = go [] sy where
+first g sy = maybeAddEot $ first_ g sy where
+  maybeAddEot ss | nullable g [] sy = Dollar:ss
+                 | otherwise = ss
+
+first_ g sy = go [] sy where
   go _ []                        = []
   go v (h:t) | h `is_terminal` g = [h] 
-             | h `elem` v        = go v t
              | nullable_nt g h   = go (h:v) t  ++ goNT v h
              | otherwise         = goNT v h
-  goNT v h = concatMap (go (h:v)) (rhs_nt g h)
+  goNT v h   | h `elem` v = [] 
+             | otherwise = concatMap (go (h:v)) (rhs_nt g h)
 
 first_nt :: (Eq nt, Eq t) 
         => Cfg t nt                -- ^ Grammar

@@ -96,7 +96,7 @@ elemNT nt rhs = or (map isNT rhs)
     isNT nt' = nt' == nt
 
 
--- | Verifies whther a sequence of symbols derives in the empty strig or not. 
+-- | does a sequence of symbols derive the empty string?
 -- second argument contains symbols already visited
 nullable :: Cfg -> Symbols -> Symbols -> Bool
 nullable g _ []    = True
@@ -114,13 +114,18 @@ nullable_nt g nt = nullable_nt' g [] nt
 --   sequence of symbols
 
 first :: Cfg -> RHS -> Symbols
-first g sy = go [] sy where
+first g sy = maybeAddEot $ first_ g sy where
+  maybeAddEot ss | nullable g [] sy = EOT:ss
+                 | otherwise = ss
+                               
+first_ :: Cfg -> RHS -> Symbols
+first_ g sy = go [] sy where
   go _ []                        = []
   go v (h:t) | h `is_terminal` g = [h] 
-             | h `elem` v        = go v t
              | nullable_nt g h   = go (h:v) t  ++ goNT v h
              | otherwise         = goNT v h
-  goNT v h = concatMap (go (h:v)) (rhs_nt g h)
+  goNT v h   | h `elem` v = [] -- go v t
+             | otherwise = concatMap (go (h:v)) (rhs_nt g h)
 
 first_nt :: Cfg -> Symb -> Symbols
 first_nt g nt = first g [nt]
@@ -135,6 +140,7 @@ follow g nt = follow' g [] nt
 
 -- follow' :: (Eq t, Eq nt) => Cfg t nt -> [Symb t nt] -> Symb t nt -> [Symb t nt]
 follow' g v nt | nt `elem` v = [] 
+               | nt ==  root g = EOT : all_suffices
                | otherwise   = all_suffices
   where all_suffices = follow_prods_with_nt g (nt:v) nt (prods_rhs_with_nt g nt)
 
@@ -166,6 +172,7 @@ readRHS :: String -> RHS
 readRHS [] = []
 readRHS (' ':s) = readRHS s -- for convenience
 readRHS (c:cs) = readSymb c:readRHS cs
+rr = readRHS
 
 (|->) :: Char -> RHS -> Prod
 lhs |-> rhs = Prod lhs  rhs 
@@ -186,8 +193,8 @@ g2 = prods2cfg [
   'E' |-> rr"T",
   'T' |-> rr"T*F",
   'T' |-> rr"F",
-  'F' |-> rr"a" --,
-  --'F' |-> rr"(E)"
+  'F' |-> rr"a",
+  'F' |-> rr"(E)"
   ] 'E' where rr = readRHS
 
 g3 =  prods2cfg [
