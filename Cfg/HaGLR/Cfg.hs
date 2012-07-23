@@ -11,7 +11,8 @@
 --
 -----------------------------------------------------------------------------
 
-module Language.ContextFree.Cfg where
+--module Language.ContextFree.Cfg where
+module Cfg.HaGLR.Cfg where
 
 ------------------------------------------------------------------------------
 

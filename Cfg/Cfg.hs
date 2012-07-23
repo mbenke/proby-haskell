@@ -208,4 +208,3 @@ g3 =  prods2cfg [
   ("t2",'T' |-> rr"F"),
   ("t3", 'F' |-> rr"a")
           ] 'T' where rr = readRHS
-                      
