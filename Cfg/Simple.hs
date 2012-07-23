@@ -3,7 +3,11 @@ module Cfg.Simple where
 import Data.List(nub,intersperse,intersect)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
--- borrowed from HaGLR
+import Data.Char(isUpper)
+
+type Sym = Symb
+type Gram = Cfg
+
 data Symb 
 	     = EOT     -- ^ End of input
              | Root    -- ^ Root symbol
@@ -153,11 +157,19 @@ f g v lhs rhs | nullable g [] rhs  = first g rhs ++ follow' g v lhs
               | otherwise          = first g rhs
 
 
-type Sym = Symb
-type Gram = Cfg
 
-(|->) :: Char -> [Symb] -> Prod
+readSymb :: Char -> Sym
+readSymb c | isUpper c = NT c
+           | otherwise = T c
+
+readRHS :: String -> RHS
+readRHS [] = []
+readRHS (' ':s) = readRHS s -- for convenience
+readRHS (c:cs) = readSymb c:readRHS cs
+
+(|->) :: Char -> RHS -> Prod
 lhs |-> rhs = Prod lhs  rhs 
+
 
 g1 = prods2cfg
          [ 'L' |-> [NT 'L',T 'a']
@@ -167,3 +179,19 @@ g1 = prods2cfg
 t1 = nullable_nt g1 $ NT 'L'
 t2 = first_nt g1 $ NT 'L'
 t3 = first g1 [NT 'L']
+
+g2 :: Gram
+g2 = prods2cfg [
+  'E' |-> rr"E+T",
+  'E' |-> rr"T",
+  'T' |-> rr"T*F",
+  'T' |-> rr"F",
+  'F' |-> rr"a" --,
+  --'F' |-> rr"(E)"
+  ] 'E' where rr = readRHS
+
+g3 =  prods2cfg [
+  'T' |-> rr"T*F",
+  'T' |-> rr"F",
+  'F' |-> rr"a"
+          ] 'F' where rr = readRHS

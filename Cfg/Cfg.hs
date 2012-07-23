@@ -1,4 +1,5 @@
 import Data.List(nub,intersperse,intersect)
+import Data.Char(isUpper)
 -- borrowed from HaGLR
 data Symb t nt 
 	     = Dollar   -- ^ End of input
@@ -169,6 +170,15 @@ f g v lhs rhs | nullable g [] rhs  = first g rhs ++ follow' g v lhs
 type Sym = Symb Char Char
 type Gram = Cfg Char Char
 
+readSymb :: Char -> Sym
+readSymb c | isUpper c = NT c
+           | otherwise = T c
+
+readRHS :: String -> [Symb Char Char]
+readRHS [] = []
+readRHS (' ':s) = readRHS s -- for convenience
+readRHS (c:cs) = readSymb c:readRHS cs
+
 (|->) :: nt -> [Symb t nt] -> [Symb t nt]
 lhs |-> rhs = NT lhs : rhs 
 g1 = Cfg [T 'a']
@@ -181,3 +191,21 @@ g1 = Cfg [T 'a']
 t1 = nullable_nt g1 $ NT 'L'
 t2 = first_nt g1 $ NT 'L'
 t3 = first g1 [NT 'L']
+
+{-
+g2 :: Gram
+g2 = prods2cfg [
+  'E' |-> rr"E+T",
+  'E' |-> rr"T",
+  'T' |-> rr"T*F",
+  'T' |-> rr"F",
+  'F' |-> rr"a" --,
+  --'F' |-> rr"(E)"
+  ] 'E' where rr = readRHS
+-}
+g3 =  prods2cfg [
+  ("t1", 'T' |-> rr"T*F"),
+  ("t2",'T' |-> rr"F"),
+  ("t3", 'F' |-> rr"a")
+          ] 'T' where rr = readRHS
+                      
