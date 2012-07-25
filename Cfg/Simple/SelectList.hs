@@ -8,10 +8,11 @@ nullable :: Cfg -> Symbols -> Symbols -> Bool
 nullable g _ []    = True
 nullable g v (T h:t)   = False -- h `is_terminal` g = False -- || h `elem` v = False
 nullable g v (nt:t) | nt `elem` v = False
-                    | otherwise   = (nullable_nt' g (nt:v) nt) && (nullable g (nt:v) t)
+                    | otherwise   = (nullable_nt' g (nt:v) nt) 
+                                    && (nullable g (nt:v) t)
 
 nullable_nt' :: Cfg -> Symbols -> Symb -> Bool
-nullable_nt' g v nt = or $ map (nullable g v) (rhs_nt g nt) 
+nullable_nt' g v nt = any (nullable g v) (rhs_nt g nt) 
 
 nullable_nt :: Cfg -> Symb -> Bool 
 nullable_nt g nt = nullable_nt' g [] nt
@@ -70,7 +71,8 @@ f g v lhs rhs | nullable g [] rhs  = first g rhs ++ follow' g v lhs
 
 -- # Tests
 
-t1 = nullable_nt g1 $ NT 'L'
+t1 = nullable_nt g1 $ NT 'L' -- True
 t2 = first_nt g1 $ NT 'L'
 t3 = first g1 [NT 'L']
 
+t4 =  nullable_nt g2 (NT 'E') -- False
