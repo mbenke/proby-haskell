@@ -69,10 +69,3 @@ f ::Cfg  -> [Symb] -> Symb -> RHS -> [Symb]
 f g v lhs rhs | nullable g [] rhs  = first g rhs ++ follow' g v lhs
               | otherwise          = first g rhs
 
--- # Tests
-
-t1 = nullable_nt g1 $ NT 'L' -- True
-t2 = first_nt g1 $ NT 'L'
-t3 = first g1 [NT 'L']
-
-t4 =  nullable_nt g2 (NT 'E') -- False
