@@ -37,6 +37,15 @@ nullable _ = False
 delta :: Reg c -> Reg c
 delta r = if nullable r then Eps else Empty
 
+empty :: Reg c -> Bool
+empty Empty = True
+empty (l :> r) = empty l || empty r
+empty (l :| r) = empty l && empty r
+empty _ = False
+
+mayStart :: Eq c => c -> Reg c -> Bool
+mayStart c = not . empty . der c
+
 der :: Eq c => c -> Reg c -> Reg c
 der c1 (Lit c2) | c1 == c2  = Eps
                 | otherwise = Empty

@@ -22,6 +22,13 @@ nullableUnit = nullable m1
 -- nullableOp :: Reg AB -> Property
 nullableOp = forAllNullable $ \x -> forAllNullable $ \y ->  nullable (x <> y)
 
+iff :: Bool -> Bool -> Bool
+iff a b = (a && b) || (not a && not b)
+
+nullableSimpl, emptySimpl :: Reg AB -> Bool
+nullableSimpl x = nullable x `iff` nullable (simpl x)
+emptySimpl x = empty x `iff` empty (simpl x)
+
 recLeftNul :: Reg AB -> Property
 recLeftNul y = forAllNullable $ \x ->  
                forAllMatching y $ \cs -> 
@@ -45,11 +52,15 @@ main = do
        quickCheck nullableUnit
        print "nullable op"
        quickCheck nullableOp
+       writeln "nullableSimpl"
+       quickCheck nullableSimpl
+       quickCheck emptySimpl
+{-
        writeln "cs ∈ L(y) && ε ∈ L(x) ==> cs ∈ L(x:>y)"
        quickCheck recLeftNul
        writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
        quickCheck recRightNul
-       
+  -}     
 ------------------------------------------------------------
 -- Auxilliary       
 ------------------------------------------------------------
