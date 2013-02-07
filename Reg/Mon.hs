@@ -6,10 +6,8 @@ class Mon m where
   m1 :: m
   (<>) :: m -> m -> m
   
--- Props:
--- left_unit x = m1 <> x == x
-
-instance Mon [a] where
-  m1 = []
-  (<>) = (++)
+-- ** Properties:
+-- * leftUnit x = m1 <> x == x
+-- * rightUnit x =  x <> m1 == x
+-- * assoc x y z = (x<>y)<>z == x<>(y<>z)
 
