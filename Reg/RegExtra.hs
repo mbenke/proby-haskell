@@ -1,3 +1,4 @@
+{-# LANGUAGE NoMonomorphismRestriction, FlexibleInstances #-}
 module RegExtra where
 import Reg
 import Mon
@@ -10,7 +11,8 @@ instance Mon (Reg c) where
   Eps <> y = y
   x <> Eps = x 
   x <> Empty = Empty
-  x <> (y :> z) = (x <> y) :> z 
+  (x :> y) <> z = x:> (y <> z)
+  -- x <> (y :> z) = (x <> y) :> z 
   x <> y = x :> y
 
 simpl :: Reg c -> Reg c
@@ -48,3 +50,31 @@ der _ _ = Empty
 
 ders :: Eq c => [c] -> Reg c -> Reg c
 ders cs r = foldl (flip der) r cs
+
+recognizer :: Eq c => Reg c -> [c] -> Bool
+recognizer r cs = nullable $ ders cs r
+accepts = recognizer
+
+instance Num (Reg Integer) where
+  fromInteger = Lit
+  (+) = (:|)
+  (*) = (:>)
+  abs = undefined
+  signum = undefined
+  
+r1 :: Reg Integer
+r1 = Many (0*1 + 1*0) * 1 
+
+char :: Char -> Reg Char
+char = Lit
+
+string :: [Char] -> Reg Char
+string = foldr1 (:>) . map Lit
+
+alts :: [Char] -> Reg Char
+alts = foldr1 (:|) . map Lit
+
+letter = alts ['a'..'z'] :| alts ['A'..'Z']
+digit = alts ['0'..'9']
+number = digit :> Many digit
+ident = letter :> Many (letter :| digit)
