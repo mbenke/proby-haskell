@@ -1,4 +1,3 @@
-{-# LANGUAGE NoMonomorphismRestriction, FlexibleInstances #-}
 module RegExtra where
 import Reg
 import Mon
@@ -35,6 +34,7 @@ nullable (x :| y) = nullable x || nullable y
 nullable (Many _) = True
 nullable _ = False
 
+delta :: Reg c -> Reg c
 delta r = if nullable r then Eps else Empty
 
 der :: Eq c => c -> Reg c -> Reg c
@@ -51,19 +51,10 @@ der _ _ = Empty
 ders :: Eq c => [c] -> Reg c -> Reg c
 ders cs r = foldl (flip der) r cs
 
-recognizer :: Eq c => Reg c -> [c] -> Bool
+accepts,recognizer :: Eq c => Reg c -> [c] -> Bool
 recognizer r cs = nullable $ ders cs r
 accepts = recognizer
 
-instance Num (Reg Integer) where
-  fromInteger = Lit
-  (+) = (:|)
-  (*) = (:>)
-  abs = undefined
-  signum = undefined
-  
-r1 :: Reg Integer
-r1 = Many (0*1 + 1*0) * 1 
 
 char :: Char -> Reg Char
 char = Lit
