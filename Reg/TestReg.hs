@@ -22,6 +22,16 @@ nullableUnit = nullable m1
 -- nullableOp :: Reg AB -> Property
 nullableOp = forAllNullable $ \x -> forAllNullable $ \y ->  nullable (x <> y)
 
+recLeftNul :: Reg AB -> Property
+recLeftNul y = forAllNullable $ \x ->  
+               forAllMatching y $ \cs -> 
+               accepts y cs ==> accepts (x:>y) cs
+
+recRightNul :: Reg AB -> Property
+recRightNul x = forAllNullable $ \y ->  
+               forAllMatching x $ \cs -> 
+               accepts x cs ==> accepts (x:>y) cs
+
 writeln = putStrLn
 
 main = do
@@ -35,6 +45,10 @@ main = do
        quickCheck nullableUnit
        print "nullable op"
        quickCheck nullableOp
+       writeln "cs ∈ L(y) && ε ∈ L(x) ==> cs ∈ L(x:>y)"
+       quickCheck recLeftNul
+       writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
+       quickCheck recRightNul
        
 ------------------------------------------------------------
 -- Auxilliary       
@@ -52,7 +66,7 @@ instance (Eq c,Arbitrary c) => Arbitrary (Reg c) where
   arbitrary = sized arb where
     arb 0 = oneof [return Eps, return Empty]
     arb 1 = Lit <$> arbitrary
-    arb n = oneof [Many <$> arb1, liftM2 (:>) arb2 arb2, liftM2 (:|) arb2 arb2] where
+    arb n = oneof [Many <$> arb2, liftM2 (:>) arb2 arb2, liftM2 (:|) arb2 arb2] where
       arb1 = arb (n-1) 
       arb2 = arb (n `div` 2)
 
@@ -73,3 +87,26 @@ genNullable = sized gn where
     liftM2 (:|) arbitrary gn2,
     liftM2 (:|) gn2 arbitrary] where
       gn2 = gn (n `div` 2)
+      
+forAllMatching = forAll . genMatching
+genMatching :: Reg AB -> Gen [AB]
+genMatching r = sized (gm r)  `suchThat` accepts r 
+
+gm r 0 | nullable r = return []
+       | otherwise = elements [[A],[B]]
+gm r n = gmn (simpl r) where
+    gmn (Lit c) = return [c]
+    gmn (r1 :| r2) = oneof [gmn r1, gmn r2]
+    gmn (Lit c:> r) = do { cs <- gm r (n-1); return (c:cs) }
+    gmn (r1 :> r2) = do
+      k <- choose (0,n) 
+      liftM2 (++) (gm r1 k) (gm r2 (n-k))
+    gmn (Many r) = do 
+      k <- choose (0,n) 
+      if k == 0 then return [] else splitAt (n-k) (gm r) (gm (Many r))
+    gmn _ = return []
+    splitAt k g1 g2 = 
+      liftM2 (++) (g1 k) (g2 (n-k))
+
+genRegAB :: Gen (Reg AB)
+genRegAB = arbitrary
