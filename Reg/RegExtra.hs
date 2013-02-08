@@ -69,13 +69,12 @@ accepts,recognizer :: Eq c => Reg c -> [c] -> Bool
 recognizer r cs = nullable $ ders cs r
 accepts = recognizer
 
-frontMatch :: Eq c => Reg c -> [c] -> Maybe ([c],[c])
-frontMatch r [] | nullable r = Just ([],[])
-frontMatch r [] = Nothing
-frontMatch r (c:cs) = do 
-  (match, rest) <- frontMatch (der c r) cs 
-  return (c:match,rest)
-  
+longestMatch r [] = if nullable r then Just []  else Nothing
+longestMatch r (c:cs) 
+  | empty r' = longestMatch r []
+  | otherwise = longestMatch r' cs >>= return . (c:)
+  where r' = der c r
+        
 char :: Char -> Reg Char
 char = Lit
 
@@ -90,4 +89,4 @@ digit = alts ['0'..'9']
 number = digit :> Many digit
 ident = letter :> Many (letter :| digit)
 
-many = Many . Lit
+many1 r = r :> Many r
