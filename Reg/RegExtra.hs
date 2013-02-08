@@ -14,14 +14,17 @@ instance Mon (Reg c) where
   -- x <> (y :> z) = (x <> y) :> z 
   x <> y = x :> y
 
-simpl :: Reg c -> Reg c
+simpl :: Eq c => Reg c -> Reg c
 simpl (Empty :| x) = simpl x
 simpl (x :| Empty) = simpl x
+simpl (x :| y) | x' == y' = x' where  [x',y'] = map simpl [x,y]
+--simpl ((x:| y) :| z) = simpl (x :| (y :| z))
 simpl (x :| y) = simpl x :| simpl y
 simpl (Empty :> x) = Empty
 simpl (x :> Empty) = Empty
 simpl (Eps :> x) = x
 simpl (x :> Eps) = x
+simpl ((x :> y) :> z) = simpl (x :> (y :> z))
 simpl (Many Eps) = Eps
 simpl (Many Empty) = Eps
 simpl x = x
@@ -33,6 +36,8 @@ nullable (x :> y) = nullable x && nullable y
 nullable (x :| y) = nullable x || nullable y
 nullable (Many _) = True
 nullable _ = False
+
+ifNullable r t e = if nullable r then t else e
 
 delta :: Reg c -> Reg c
 delta r = if nullable r then Eps else Empty
@@ -64,7 +69,13 @@ accepts,recognizer :: Eq c => Reg c -> [c] -> Bool
 recognizer r cs = nullable $ ders cs r
 accepts = recognizer
 
-
+frontMatch :: Eq c => Reg c -> [c] -> Maybe ([c],[c])
+frontMatch r [] | nullable r = Just ([],[])
+frontMatch r [] = Nothing
+frontMatch r (c:cs) = do 
+  (match, rest) <- frontMatch (der c r) cs 
+  return (c:match,rest)
+  
 char :: Char -> Reg Char
 char = Lit
 
@@ -78,3 +89,5 @@ letter = alts ['a'..'z'] :| alts ['A'..'Z']
 digit = alts ['0'..'9']
 number = digit :> Many digit
 ident = letter :> Many (letter :| digit)
+
+many = Many . Lit
