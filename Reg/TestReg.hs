@@ -34,9 +34,9 @@ recLeftNul y = forAllNullable $ \x ->
                forAllMatching y $ \cs -> 
                accepts y cs ==> accepts (x:>y) cs
 
-recRightNul :: Reg AB -> Property
-recRightNul x = forAllNullable $ \y ->  
-               forAllMatching x $ \cs -> 
+recRightNul :: [AB] -> Reg AB -> Property
+recRightNul cs x = forAllNullable $ \y ->  
+               -- forAllMatching x $ \cs -> 
                accepts x cs ==> accepts (x:>y) cs
 
 writeln = putStrLn
@@ -55,12 +55,12 @@ main = do
        writeln "nullableSimpl"
        quickCheck nullableSimpl
        quickCheck emptySimpl
-{-
-       writeln "cs ∈ L(y) && ε ∈ L(x) ==> cs ∈ L(x:>y)"
-       quickCheck recLeftNul
-       writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
-       quickCheck recRightNul
-  -}     
+
+       --writeln "cs ∈ L(y) && ε ∈ L(x) ==> cs ∈ L(x:>y)"
+       --quickCheck recLeftNul
+       --writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
+       --quickCheck recRightNul
+
 ------------------------------------------------------------
 -- Auxilliary       
 ------------------------------------------------------------
@@ -104,6 +104,16 @@ genMatching :: Reg AB -> Gen [AB]
 genMatching r = sized (gm r)  `suchThat` accepts r 
 
 gm r 0 | nullable r = return []
+gm r n | n < 0 = return []
+       | otherwise = oneof $ [liftM2 (:) gc gcs |
+                             (gc,gcs) <- [(return c,gm (der c r) (n-1)) |
+                             c  <- [A,B], mayStart c r]] `whenEmpty` [return []]
+
+whenEmpty [] d = d
+whenEmpty a d = a
+                             
+{-
+gm r 0 | nullable r = return []
        | otherwise = elements [[A],[B]]
 gm r n = gmn (simpl r) where
     gmn (Lit c) = return [c]
@@ -118,6 +128,6 @@ gm r n = gmn (simpl r) where
     gmn _ = return []
     splitAt k g1 g2 = 
       liftM2 (++) (g1 k) (g2 (n-k))
-
+-}
 genRegAB :: Gen (Reg AB)
 genRegAB = arbitrary
