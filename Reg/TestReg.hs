@@ -39,9 +39,19 @@ recRightNul cs x = forAllNullable $ \y ->
                -- forAllMatching x $ \cs -> 
                accepts x cs ==> accepts (x:>y) cs
 
+testRe1 = Many digit <> string "ala"
+testRe2 = Many digit <> Many letter <> Many digit
+
+testStr1 = replicate 1000 '0' ++ "ala"
+
+write = putStr
 writeln = putStrLn
 
 main = do
+       write "testRe1 accepts testStr1: " 
+       print $ accepts testRe1 testStr1
+       write "testRe2 accepts testStr1: " 
+       print $ accepts testRe2 testStr1
        writeln "testing left unit"
        quickCheck leftUnit
        writeln "testing right unit"

@@ -18,7 +18,7 @@ simpl :: Eq c => Reg c -> Reg c
 simpl (Empty :| x) = simpl x
 simpl (x :| Empty) = simpl x
 simpl (x :| y) | x' == y' = x' where  [x',y'] = map simpl [x,y]
---simpl ((x:| y) :| z) = simpl (x :| (y :| z))
+simpl ((x:| y) :| z) = simpl (x :| (y :| z))
 simpl (x :| y) = simpl x :| simpl y
 simpl (Empty :> x) = Empty
 simpl (x :> Empty) = Empty
