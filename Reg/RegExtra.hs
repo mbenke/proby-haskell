@@ -25,8 +25,8 @@ simpl (Empty :> x) = Empty
 simpl (x :> Empty) = Empty
 simpl (Eps :> x) = x
 simpl (x :> Eps) = x
-simpl ((x :> y) :> z) = simpl ( simpl x :> (simpl y :> simpl z))
-simpl (x :> y) = simpl x :> simpl y
+simpl ((x :> y) :> z) = simpl x <> simpl y <> simpl z
+simpl (x :> y) = simpl x <> simpl y
 simpl (Many Eps) = Eps
 simpl (Many Empty) = Eps
 -- simpl (Many (Eps :| x)) = simpl (Many (unEpsOr x))
@@ -83,9 +83,9 @@ der c1 (Lit c2) | c1 == c2  = Eps
                 | otherwise = Empty
 der c (r1 :| r2) = simpl $ der c r1 :| der c r2
 der c (r1 :> r2) = simpl $ d1 :| d2  where
-                   d1 = simpl $ der c r1 :> r2
-                   d2 = simpl $ delta r1 :> der c r2
-der c (Many r)   = simpl $ der c r :> Many r
+                   d1 = simpl $ der c r1 <> r2
+                   d2 = simpl $ delta r1 <> der c r2
+der c (Many r)   = simpl $ der c r <> Many r
 der _ _ = Empty
 
 
