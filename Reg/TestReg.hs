@@ -2,6 +2,7 @@
 import Test.QuickCheck
 import Control.Monad(liftM2)
 import Data.Functor((<$>))
+import Debug.Trace(trace)
 
 import Mon
 import Reg
@@ -29,10 +30,10 @@ nullableSimpl, emptySimpl :: Reg AB -> Bool
 nullableSimpl x = nullable x `iff` nullable (simpl x)
 emptySimpl x = empty x `iff` empty (simpl x)
 
-recLeftNul :: Reg AB -> Property
-recLeftNul y = forAllNullable $ \x ->  
+-- recLeftNul :: Reg AB -> Property
+recLeftNul = forAllNullable $ \y ->(forAllNullable $ \x ->  
                forAllMatching y $ \cs -> 
-               accepts y cs ==> accepts (x:>y) cs
+               accepts y cs ==> accepts (x:>y) cs)
 
 recRightNul :: [AB] -> Reg AB -> Property
 recRightNul cs x = forAllNullable $ \y ->  
@@ -51,7 +52,7 @@ main = do
        write "testRe1 accepts testStr1: " 
        print $ accepts testRe1 testStr1
        write "testRe2 accepts testStr1: " 
-       print $ accepts testRe2 testStr1
+       -- print $ accepts testRe2 testStr1
        writeln "testing left unit"
        quickCheck leftUnit
        writeln "testing right unit"
@@ -66,8 +67,8 @@ main = do
        quickCheck nullableSimpl
        quickCheck emptySimpl
 
-       --writeln "cs ∈ L(y) && ε ∈ L(x) ==> cs ∈ L(x:>y)"
-       --quickCheck recLeftNul
+       writeln "cs ∈ L(y) && ε ∈ L(x) ==> cs ∈ L(x:>y)"
+       verboseCheck recLeftNul
        --writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
        --quickCheck recRightNul
 
@@ -103,21 +104,40 @@ genNullable :: Gen (Reg AB)
 genNullable = sized gn where
   gn 0 = return Eps
   gn n = oneof [
-    Many <$> arbitrary, 
+    Many <$> gab2, 
     liftM2 (:>) gn2 gn2,
-    liftM2 (:|) arbitrary gn2,
-    liftM2 (:|) gn2 arbitrary] where
+    liftM2 (:|) gab2 gn2,
+    liftM2 (:|) gn2 gab2] where
       gn2 = gn (n `div` 2)
-      
+      gab2 = gAB (div n 2)
+genRegAB :: Gen (Reg AB)
+genRegAB = sized gAB
+
+gAB 0 = return Empty
+gAB 1 = elements [Eps, Lit A, Lit B]
+gAB n = oneof [
+  Many <$> gab2,
+    liftM2 (:>) gab2 gab2,
+    liftM2 (:|) gab2 gab2,
+    liftM2 (:|) gab2 gab2] where
+      gab2 = gAB (div n 2)
+  
+  
 forAllMatching = forAll . genMatching
 genMatching :: Reg AB -> Gen [AB]
-genMatching r = sized (gm r)  `suchThat` accepts r 
+genMatching r = -- trace (show r) $
+  sized (gm r) 
 
-gm r 0 | nullable r = return []
-gm r n | n < 0 = return []
-       | otherwise = oneof $ [liftM2 (:) gc gcs |
-                             (gc,gcs) <- [(return c,gm (der c r) (n-1)) |
-                             c  <- [A,B], mayStart c r]] `whenEmpty` [return []]
+-- Assume r nullable
+gm r 0 = return []
+gm r n | n < 0 = return [] -- safety net
+       | otherwise = do
+           hd <- elements [A,B]
+           let r' = der hd r
+           if empty r' then gm r (n-1) else liftCons hd (gm r' (n-1))
+           
+liftCons :: AB -> Gen [AB] -> Gen [AB]
+liftCons x g = do { xs <- g; return (x:xs) } 
 
 whenEmpty [] d = d
 whenEmpty a d = a
@@ -139,5 +159,6 @@ gm r n = gmn (simpl r) where
     splitAt k g1 g2 = 
       liftM2 (++) (g1 k) (g2 (n-k))
 -}
-genRegAB :: Gen (Reg AB)
-genRegAB = arbitrary
+
+
+

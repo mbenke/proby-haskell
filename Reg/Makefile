@@ -5,7 +5,7 @@ test: TestReg
 	./TestReg
 
 TestReg: TestReg.hs Reg.hs RegExtra.hs Mon.hs
-	ghc --make $@
+	ghc -O2 --make $@
 
 %.tex: %.md
 	pandoc -t latex -H pl.sty -sS $^ > $@

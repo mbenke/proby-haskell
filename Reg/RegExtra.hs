@@ -16,18 +16,45 @@ instance Mon (Reg c) where
 
 simpl :: Eq c => Reg c -> Reg c
 simpl (Empty :| x) = simpl x
+simpl (Eps :| Many x) = Many (simpl x)
 simpl (x :| Empty) = simpl x
 simpl (x :| y) | x' == y' = x' where  [x',y'] = map simpl [x,y]
 simpl ((x:| y) :| z) = simpl (x :| (y :| z))
-simpl (x :| y) = simpl x :| simpl y
+simpl (x :| y) = unEmptyOr (simpl x :| simpl y)
 simpl (Empty :> x) = Empty
 simpl (x :> Empty) = Empty
 simpl (Eps :> x) = x
 simpl (x :> Eps) = x
-simpl ((x :> y) :> z) = simpl (x :> (y :> z))
+simpl ((x :> y) :> z) = simpl ( simpl x :> (simpl y :> simpl z))
+simpl (x :> y) = simpl x :> simpl y
 simpl (Many Eps) = Eps
 simpl (Many Empty) = Eps
+-- simpl (Many (Eps :| x)) = simpl (Many (unEpsOr x))
+simpl (Many x@(_:|_)) = case unEpsOr y of
+                      Empty -> Eps
+                      _ -> Many (unEpsOr y)
+                 where y = simpl x
+simpl (Many (Many x)) = Many (simpl x)
+simpl (Many x) = Many (simpl x)
 simpl x = x
+simply x = runSimpl 3 x
+  
+runSimpl 0 x = x
+runSimpl n x = if x == x' then x else runSimpl (n-1) x' where x' = simpl x
+splitOr :: Reg c -> [Reg c]
+splitOr (x :| y) = splitOr x ++ splitOr y
+splitOr Empty = []
+splitOr x = [x]
+
+mkOr [] = Empty
+mkOr [x] = x
+mkOr (x:xs) = x :| mkOr xs
+
+isEps Eps = True
+isEps _ = False
+
+unEpsOr  = mkOr . filter (not . isEps) . splitOr
+unEmptyOr = mkOr . filter (not . empty) . splitOr
 
 nullable :: Reg c -> Bool
 nullable Eps = True
@@ -63,10 +90,11 @@ der _ _ = Empty
 
 
 ders :: Eq c => [c] -> Reg c -> Reg c
-ders cs r = foldl (flip der) r cs
+ders cs r = foldl red r cs where
+  red r c = simpl (der c r)
 
 accepts,recognizer :: Eq c => Reg c -> [c] -> Bool
-recognizer r cs = nullable $ ders cs r
+recognizer r cs = nullable $ ders cs (simply r)
 accepts = recognizer
 
 match :: Eq a => Reg a -> [a] -> Maybe [a]
@@ -98,3 +126,13 @@ number = digit :> Many digit
 ident = letter :> Many (letter :| digit)
 
 many1 r = r :> Many r
+
+
+-- problematic
+prx = (((Lit B :| Lit A) :| Many Eps) :| (Many (Lit B) :> (Many Empty :> (Eps :> Eps)))) :> (Many (Lit A :| Lit B) :> (Many (Lit A) :| (Lit A :> Lit A)))
+pry = Many (((Lit A :| Lit B) :| (Lit A :| Eps)) :> ((Eps :| Eps) :| Many (Lit B)))
+pcs1 = ders [B,A,A,A] (pry <> prx)
+pyx = pry <> prx
+pyx1 = Many ((Lit A :| (Lit B :| (Lit A :| Eps))) :> Many (Lit B)) :> ((Lit B :| (Lit A :| Many (Lit B))) :> (Many (Lit A :| Lit B) :> (Many (Lit A) :| (Lit A :> Lit A))))
+pcs = [B,A,A,A,A,B,B,A,B,B,B,A,A,B,B,A,B]
+pref k = ders (take k pcs) (simply pyx)
