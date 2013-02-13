@@ -69,18 +69,18 @@ accepts,recognizer :: Eq c => Reg c -> [c] -> Bool
 recognizer r cs = nullable $ ders cs r
 accepts = recognizer
 
-longestMatch :: Eq a => Reg a -> [a] -> Maybe [a]
-longestMatch r [] = if nullable r then Just [] else Nothing
-longestMatch r (c:cs) 
-  | empty r' = longestMatch r []
-  | otherwise = longestMatch r' cs >>= return . (c:)
+match :: Eq a => Reg a -> [a] -> Maybe [a]
+match r [] = if nullable r then Just [] else Nothing
+match r (c:cs) 
+  | empty r' = match r []
+  | otherwise = match r' cs >>= return . (c:)
   where r' = der c r
         
-match1 :: Eq a => Reg a -> [a] -> Maybe ([a],[a])
-match1 r [] = if nullable r then return ([],[]) else Nothing
-match1 r s@(c:cs) 
-  | empty r' = match1 r [] >> return ([],s)
-  | otherwise = do { (m,rest) <- match1 r' cs ; return (c:m,rest) }
+search1 :: Eq a => Reg a -> [a] -> Maybe ([a],[a])
+search1 r [] = if nullable r then return ([],[]) else Nothing
+search1 r s@(c:cs) 
+  | empty r' = search1 r [] >> return ([],s)
+  | otherwise = do { (m,rest) <- search1 r' cs ; return (c:m,rest) }
   where r' = der c r
 
 char :: Char -> Reg Char

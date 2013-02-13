@@ -13,6 +13,9 @@ TestReg: TestReg.hs Reg.hs RegExtra.hs Mon.hs
 %.pdf: %.tex
 	$(PDFLATEX) $<; $(PDFLATEX) $<
 
+%.moo: %.md
+	sed 's/{.haskell}//g' < $^ > $@
+
 clean:: texclean hsclean
 	-rm -f *~
 
