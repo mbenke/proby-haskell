@@ -1,8 +1,8 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+-- {-# LANGUAGE NoMonomorphismRestriction #-}
 import Test.QuickCheck
 import Control.Monad(liftM2)
 import Data.Functor((<$>))
-import Debug.Trace(trace)
+-- import Debug.Trace(trace)
 
 import Mon
 import Reg
@@ -35,9 +35,9 @@ recLeftNul = forAllNullable $ \y ->(forAllNullable $ \x ->
                forAllMatching y $ \cs -> 
                accepts y cs ==> accepts (x:>y) cs)
 
-recRightNul :: [AB] -> Reg AB -> Property
-recRightNul cs x = forAllNullable $ \y ->  
-               -- forAllMatching x $ \cs -> 
+recRightNul :: Reg AB -> Property
+recRightNul x = forAllNullable $ \y ->  
+               forAllMatching x $ \cs -> 
                accepts x cs ==> accepts (x:>y) cs
 
 testRe1 = Many digit <> string "ala"
@@ -52,7 +52,7 @@ main = do
        write "testRe1 accepts testStr1: " 
        print $ accepts testRe1 testStr1
        write "testRe2 accepts testStr1: " 
-       -- print $ accepts testRe2 testStr1
+       print $ accepts testRe2 testStr1
        writeln "testing left unit"
        quickCheck leftUnit
        writeln "testing right unit"
@@ -68,9 +68,9 @@ main = do
        quickCheck emptySimpl
 
        writeln "cs ∈ L(y) && ε ∈ L(x) ==> cs ∈ L(x:>y)"
-       verboseCheck recLeftNul
-       --writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
-       --quickCheck recRightNul
+       quickCheck recLeftNul
+       writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
+       quickCheck recRightNul
 
 ------------------------------------------------------------
 -- Auxilliary       
@@ -125,40 +125,41 @@ gAB n = oneof [
   
 forAllMatching = forAll . genMatching
 genMatching :: Reg AB -> Gen [AB]
-genMatching r = -- trace (show r) $
-  sized (gm r) 
+genMatching r = sized (gm r) 
 
 -- Assume r nullable
+{-
 gm r 0 = return []
 gm r n | n < 0 = return [] -- safety net
        | otherwise = do
            hd <- elements [A,B]
            let r' = der hd r
            if empty r' then gm r (n-1) else liftCons hd (gm r' (n-1))
-           
+-}           
 liftCons :: AB -> Gen [AB] -> Gen [AB]
 liftCons x g = do { xs <- g; return (x:xs) } 
 
 whenEmpty [] d = d
 whenEmpty a d = a
                              
-{-
+
+
 gm r 0 | nullable r = return []
        | otherwise = elements [[A],[B]]
 gm r n = gmn (simpl r) where
     gmn (Lit c) = return [c]
     gmn (r1 :| r2) = oneof [gmn r1, gmn r2]
-    gmn (Lit c:> r) = do { cs <- gm r (n-1); return (c:cs) }
+    gmn (Lit c:> r) = liftCons c $ gm r (n-1)
     gmn (r1 :> r2) = do
       k <- choose (0,n) 
-      liftM2 (++) (gm r1 k) (gm r2 (n-k))
+      splitAt k (gm r1) (gm r2)
     gmn (Many r) = do 
       k <- choose (0,n) 
       if k == 0 then return [] else splitAt (n-k) (gm r) (gm (Many r))
     gmn _ = return []
     splitAt k g1 g2 = 
       liftM2 (++) (g1 k) (g2 (n-k))
--}
+
 
 
 

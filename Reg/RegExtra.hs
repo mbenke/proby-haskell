@@ -1,19 +1,44 @@
 module RegExtra where
 import Reg
 import Mon
+import Data.List(nub)
 
 data AB = A | B deriving(Eq,Ord,Show)
 
 instance Mon (Reg c) where
   m1 = Eps
-  Empty <> y = Empty
+  -- Empty <> y = Empty
+  -- x <> Empty = Empty
   Eps <> y = y
-  x <> Eps = x 
-  x <> Empty = Empty
-  (x :> y) <> z = x:> (y <> z)
-  -- x <> (y :> z) = (x <> y) :> z 
-  x <> y = x :> y
+  x <> Eps = x
+  x <> y = mkSeq $(splitSeq x) ++ (splitSeq y)
+  
+mkSeq :: [Reg c] -> Reg c
+mkSeq [] = Eps
+mkSeq xs = foldr1 (:>) xs
 
+splitSeq :: Reg c -> [Reg c]
+splitSeq (x :> y) = splitSeq x ++ splitSeq y
+splitSeq Eps = []
+splitSeq x = [x]
+
+step :: Eq c => Reg c -> Reg c
+step r@(x :| y) = unEmptyOr r
+step r@(x :> y) = step x <> step y
+step (Many (Many x)) = Many x
+step (Many Eps) = Eps
+step (Many r) = Many $ unEpsOr $ step r
+step x = x
+
+runSteps :: Eq c => Int -> Reg  c -> Reg c
+runSteps 0 x = x
+runSteps n x = if x == x' then x else runSteps (n-1) x' where x' = step x
+
+simpl, simply :: Eq c => Reg c -> Reg c
+simpl x = runSteps 5 x
+simply = simpl
+
+{-
 simpl :: Eq c => Reg c -> Reg c
 simpl (Empty :| x) = simpl x
 simpl (Eps :| Many x) = Many (simpl x)
@@ -36,8 +61,9 @@ simpl (Many x@(_:|_)) = case unEpsOr y of
                  where y = simpl x
 simpl (Many (Many x)) = Many (simpl x)
 simpl (Many x) = Many (simpl x)
-simpl x = x
-simply x = runSimpl 3 x
+-}
+-- simpl x = x
+-- simply x = runSimpl 3 x
   
 runSimpl 0 x = x
 runSimpl n x = if x == x' then x else runSimpl (n-1) x' where x' = simpl x
@@ -54,7 +80,8 @@ isEps Eps = True
 isEps _ = False
 
 unEpsOr  = mkOr . filter (not . isEps) . splitOr
-unEmptyOr = mkOr . filter (not . empty) . splitOr
+unEmptyOr :: Eq c => Reg c -> Reg c
+unEmptyOr = mkOr . nub . filter (not . empty) . splitOr
 
 nullable :: Reg c -> Bool
 nullable Eps = True
