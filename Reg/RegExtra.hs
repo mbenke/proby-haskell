@@ -131,13 +131,28 @@ match r (c:cs)
   | otherwise = match r' cs >>= return . (c:)
   where r' = der c r
         
-search1 :: Eq a => Reg a -> [a] -> Maybe ([a],[a])
-search1 r [] = if nullable r then return ([],[]) else Nothing
-search1 r s@(c:cs) 
-  | empty r' = search1 r [] >> return ([],s)
-  | otherwise = do { (m,rest) <- search1 r' cs ; return (c:m,rest) }
+match1 :: Eq a => Reg a -> [a] -> Maybe ([a],[a])
+match1 r [] = if nullable r then Just ([],[]) else Nothing
+match1 r s@(c:cs) 
+  | empty r' = match1 r [] >> return ([],s)
+  | otherwise = do { (m,rest) <- match1 r' cs ; return (c:m,rest) }
   where r' = der c r
 
+search :: Eq a => Reg a -> [a] -> Maybe ([a],[a])
+search r [] = if nullable r then return ([],[]) else Nothing
+search r s@(c:cs) 
+  | empty r' = if nullable r then return ([],s) else search r cs
+  | otherwise = do { (m,rest) <- search r' cs ; return (c:m,rest) }
+  where r' = der c r
+
+findall ::  Eq a => Reg a -> [a] -> [[a]]
+findall r cs = maybe [] f (search r cs) where
+  f (m,t) = m:findall r t
+{-
+findall r cs = case search r cs of
+  Nothing -> []
+  Just (m,t1) -> m:findall r t1 
+-}
 char :: Char -> Reg Char
 char = Lit
 
