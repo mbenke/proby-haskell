@@ -1,8 +1,7 @@
 -- {-# LANGUAGE NoMonomorphismRestriction #-}
 import Test.QuickCheck
 import Control.Monad(liftM2)
-import Data.Functor((<$>))
--- import Debug.Trace(trace)
+import Control.Applicative((<$>),(<*>))
 
 import Mon
 import Reg
@@ -20,7 +19,7 @@ assoc x y z = (x<>y)<>z == x<>(y<>z)
 nullableUnit :: Bool
 nullableUnit = nullable m1
 
--- nullableOp :: Reg AB -> Property
+nullableOp :: Property
 nullableOp = forAllNullable $ \x -> forAllNullable $ \y ->  nullable (x <> y)
 
 iff :: Bool -> Bool -> Bool
@@ -30,10 +29,10 @@ nullableSimpl, emptySimpl :: Reg AB -> Bool
 nullableSimpl x = nullable x `iff` nullable (simpl x)
 emptySimpl x = empty x `iff` empty (simpl x)
 
--- recLeftNul :: Reg AB -> Property
-recLeftNul = forAllNullable $ \y ->(forAllNullable $ \x ->  
+recLeftNul :: Reg AB -> Property
+recLeftNul y = forAllNullable $ \x ->  
                forAllMatching y $ \cs -> 
-               accepts y cs ==> accepts (x:>y) cs)
+               accepts y cs ==> accepts (x:>y) cs
 
 recRightNul :: Reg AB -> Property
 recRightNul x = forAllNullable $ \y ->  
@@ -49,19 +48,15 @@ write = putStr
 writeln = putStrLn
 
 main = do
-       write "testRe1 accepts testStr1: " 
-       print $ accepts testRe1 testStr1
-       write "testRe2 accepts testStr1: " 
-       print $ accepts testRe2 testStr1
-       writeln "testing left unit"
+       writeln "testing left unit"       
        quickCheck leftUnit
        writeln "testing right unit"
        quickCheck rightUnit
        writeln "assoc"
        quickCheck assoc
-       print "nullable unit"
+       writeln "nullable unit"
        quickCheck nullableUnit
-       print "nullable op"
+       writeln "nullable op"
        quickCheck nullableOp
        writeln "nullableSimpl"
        quickCheck nullableSimpl
@@ -72,8 +67,13 @@ main = do
        writeln "cs ∈ L(x) && ε ∈ L(y) ==> cs ∈ L(x:>y)"
        quickCheck recRightNul
 
+       write "testRe1 accepts testStr1: " 
+       print $ accepts testRe1 testStr1
+       write "testRe2 accepts testStr1: " 
+       print $ accepts testRe2 testStr1
+
 ------------------------------------------------------------
--- Auxilliary       
+-- Hic sunt leones
 ------------------------------------------------------------
        
 instance Arbitrary AB where
@@ -128,28 +128,24 @@ genMatching :: Reg AB -> Gen [AB]
 genMatching r = sized (gm r) 
 
 -- Assume r nullable
-{-
-gm r 0 = return []
-gm r n | n < 0 = return [] -- safety net
-       | otherwise = do
-           hd <- elements [A,B]
-           let r' = der hd r
-           if empty r' then gm r (n-1) else liftCons hd (gm r' (n-1))
--}           
+genMatchingNullable = sized gm where
+  gm r 0 = return []
+  gm r n | n < 0 = return [] -- safety net
+         | otherwise = do
+             hd <- elements [A,B]
+             let r' = der hd r
+             if empty r' then gm r (n-1) else (hd:) <$> (gm r' (n-1))
+           
 liftCons :: AB -> Gen [AB] -> Gen [AB]
-liftCons x g = do { xs <- g; return (x:xs) } 
-
-whenEmpty [] d = d
-whenEmpty a d = a
-                             
-
+liftCons x g = (x:) <$> g -- do { xs <- g; return (x:xs) } 
 
 gm r 0 | nullable r = return []
        | otherwise = elements [[A],[B]]
 gm r n = gmn (simpl r) where
+    gmn Eps = return []
     gmn (Lit c) = return [c]
     gmn (r1 :| r2) = oneof [gmn r1, gmn r2]
-    gmn (Lit c:> r) = liftCons c $ gm r (n-1)
+    gmn (Lit c:> r) = (c:) <$> gm r (n-1)
     gmn (r1 :> r2) = do
       k <- choose (0,n) 
       splitAt k (gm r1) (gm r2)
@@ -159,7 +155,3 @@ gm r n = gmn (simpl r) where
     gmn _ = return []
     splitAt k g1 g2 = 
       liftM2 (++) (g1 k) (g2 (n-k))
-
-
-
-
