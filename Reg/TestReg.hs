@@ -128,7 +128,7 @@ genMatching :: Reg AB -> Gen [AB]
 genMatching r = sized (gm r) 
 
 -- Assume r nullable
-genMatchingNullable = sized gm where
+genMatchingNullable = sized  . gm where
   gm r 0 = return []
   gm r n | n < 0 = return [] -- safety net
          | otherwise = do
