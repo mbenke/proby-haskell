@@ -5,6 +5,7 @@ import Data.List(nub)
 
 data AB = A | B deriving(Eq,Ord,Show)
 
+infix 4 ===
 class Equiv a where
   (===) :: a -> a -> Bool
 
@@ -15,8 +16,8 @@ instance Mon (Reg c) where
   m1 = Eps
   -- Empty <> y = Empty
   -- x <> Empty = Empty
-  Eps <> y = y
-  x <> Eps = x
+  Eps <> y = norm y
+  x <> Eps = norm x
   x <> y = mkSeq $(splitSeq x) ++ (splitSeq y)
   
 mkSeq :: [Reg c] -> Reg c

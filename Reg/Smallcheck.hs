@@ -51,7 +51,8 @@ write = putStr
 writeln = putStrLn
 main = do 
      smallCheck 3 reflReg
-     smallCheck 2 leftUnit
+     smallCheck 3 leftUnit
+     smallCheck 3 rightUnit
      writeln "assoc x y z = (x<>y)<>z == x<>(y<>z)"
      smallCheck 2 assoc
 --     smallCheck 3 nullableSimpl
