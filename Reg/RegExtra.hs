@@ -5,6 +5,12 @@ import Data.List(nub)
 
 data AB = A | B deriving(Eq,Ord,Show)
 
+class Equiv a where
+  (===) :: a -> a -> Bool
+
+instance (Eq c) => Equiv (Reg c) where
+   r1 === r2 = norm r1 == norm r2
+
 instance Mon (Reg c) where
   m1 = Eps
   -- Empty <> y = Empty
@@ -21,6 +27,9 @@ splitSeq :: Reg c -> [Reg c]
 splitSeq (x :> y) = splitSeq x ++ splitSeq y
 splitSeq Eps = []
 splitSeq x = [x]
+
+normSeq = mkSeq . splitSeq
+norm = normSeq
 
 step :: Eq c => Reg c -> Reg c
 step r@(x :| y) = unEmptyOr r
@@ -67,6 +76,7 @@ simpl (Many x) = Many (simpl x)
   
 runSimpl 0 x = x
 runSimpl n x = if x == x' then x else runSimpl (n-1) x' where x' = simpl x
+
 splitOr :: Reg c -> [Reg c]
 splitOr (x :| y) = splitOr x ++ splitOr y
 splitOr Empty = []
