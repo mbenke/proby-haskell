@@ -8,11 +8,12 @@ import Mon
 import Reg
 import RegExtra
 
-reflAB :: AB -> Bool
-reflAB x = x == x
+equivRefl :: Reg AB -> Bool
+equivRefl x = x === x
 
-reflReg :: Reg AB -> Bool
-reflReg x = x === x
+-- equivCompatible :: Monad m => Reg AB -> Reg AB -> Property m
+equivCompatible :: Reg AB -> Reg AB -> Bool
+equivCompatible c d = not ((Lit c) === (Lit d)) || c == d
 
 leftUnit :: Reg AB -> Bool
 leftUnit x = m1 <> x === x
@@ -50,7 +51,8 @@ recRightNul x = forAllNullable $ \y ->
 write = putStr
 writeln = putStrLn
 main = do 
-     smallCheck 3 reflReg
+     smallCheck 3 equivRefl
+     smallCheck 1 equivCompatible
      smallCheck 3 leftUnit
      smallCheck 3 rightUnit
      writeln "assoc x y z = (x<>y)<>z == x<>(y<>z)"
