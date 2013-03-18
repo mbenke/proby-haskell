@@ -32,7 +32,7 @@ first_ g sy = go [] sy where
              | nullable_nt g h   = go (h:v) t  ++ goNT v h
              | otherwise         = goNT v h
   goNT v h   | h `elem` v = [] -- go v t
-             | otherwise = concatMap (go (h:v)) (rhs_nt g h)
+             | otherwise = rhs_nt g h >>= go (h:v) -- (a>>=b) = concatMap b a
 
 first_nt :: Cfg -> Symb -> Symbols
 first_nt g nt = first g [nt]
