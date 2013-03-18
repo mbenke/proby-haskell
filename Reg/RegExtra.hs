@@ -158,7 +158,11 @@ search r s@(c:cs)
 
 findall ::  Eq a => Reg a -> [a] -> [[a]]
 findall r cs = maybe [] f (search r cs) where
-  f (m,t) = m:findall r t
+  f (m,t) = case m of
+     [] -> case t of
+        [] -> [m]
+        (_:t') -> m:findall r t'
+     _ -> m:findall r t
 {-
 findall r cs = case search r cs of
   Nothing -> []
