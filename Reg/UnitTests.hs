@@ -1,6 +1,6 @@
 import Mon
 import Reg
-import RegExtra0
+import RegExtra
 
 import Test.HUnit
 
