@@ -33,3 +33,6 @@ defs_pc2 = mapM def_pc2 [1,2] where
 
 ppr_pc2 :: Q String
 ppr_pc2 = fmap (show . ppr) defs_pc2
+
+print_pc2 :: IO ()
+print_pc2 = runQ ppr_pc2 >>= putStrLn
