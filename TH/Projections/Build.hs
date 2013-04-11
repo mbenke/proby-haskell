@@ -31,6 +31,5 @@ defs_pc2 = mapM def_pc2 [1,2] where
         let args = map VarP argNames
         return $ simpleFun (fname n) [TupP args] (VarE (argNames !! (n-1)))
 
--- Below for GHC 7.6
--- ppr_pc2 :: Language.Haskell.TH.PprLib.Doc
--- ppr_pc2 = runQ $ fmap ppr defs_pc2
+ppr_pc2 :: Q String
+ppr_pc2 = fmap (show . ppr) defs_pc2
