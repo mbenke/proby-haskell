@@ -1,11 +1,11 @@
 -- Based on http://www.haskell.org/haskellwiki/Quasiquotation
-module ExprQuote where
+module ExprQuote2 where
 
 import Data.Generics
 import qualified Language.Haskell.TH as TH
 import Language.Haskell.TH.Quote
 
-import Expr
+import Expr2
 
 expr  :: QuasiQuoter
 expr  =  QuasiQuoter 
@@ -19,12 +19,17 @@ quoteExprExp s = do
   pos <- getPosition
   exp <- parseExp pos s
   dataToExpQ (const Nothing) exp
+
 -- dataToExpQ :: Data a => (forall b. Data b => b -> Maybe (Q Exp)) -> a -> Q Exp
 
 quoteExprPat s = do
   pos <- getPosition
   exp <- parseExp pos s
-  dataToPatQ (const Nothing) exp
+  dataToPatQ (const Nothing `extQ` antiExprPat) exp
+
+antiExprPat :: Exp -> Maybe (TH.Q TH.Pat)
+antiExprPat (EMetaVar v) = Just $ TH.varP (TH.mkName v)
+antiExprPat _ = Nothing
 
 getPosition = fmap transPos TH.location where
   transPos loc = (TH.loc_filename loc,
