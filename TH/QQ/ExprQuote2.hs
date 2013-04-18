@@ -1,4 +1,5 @@
 -- Based on http://www.haskell.org/haskellwiki/Quasiquotation
+{-# LANGUAGE RankNTypes #-}
 module ExprQuote2 where
 
 import Data.Generics
@@ -20,8 +21,18 @@ quoteExprExp s = do
   exp <- parseExp pos s
   dataToExpQ (const Nothing `extQ` antiExprExp) exp
 
--- dataToExpQ :: Data a => (forall b. Data b => b -> Maybe (Q Exp)) -> a -> Q Exp
+-- dataToExpQ :: Data a => (forall b. Data b => b->Maybe (Q Exp)) -> a -> Q Exp
+-- antiquoter should be generic
+type AntiQuote a = forall b. Data b => b->Maybe (TH.Q a)
+nullAntiQuoter :: AntiQuote a
+nullAntiQuoter = const Nothing
+-- extQ :: (Typeable a, Typeable b) => (a -> q) -> (b -> q) -> a -> q
 
+extAQ :: Data d => AntiQuote a -> (d -> Maybe (TH.Q a)) -> AntiQuote a
+extAQ a e = a `extQ` e -- cannot be eta-reduced
+
+
+quoteExprPat :: String -> TH.Q TH.Pat
 quoteExprPat s = do
   pos <- getPosition
   exp <- parseExp pos s
