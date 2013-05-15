@@ -1,3 +1,4 @@
+
 import Data.IORef
 import Control.Concurrent
 import Control.Applicative((<$>),(<*),(*>))
@@ -5,6 +6,9 @@ import Control.Monad.Reader
 
 type Lock = MVar ()
 type STM a = Reader Lock (IO a) 
+
+stmDelay :: Int -> STM ()
+stmDelay = return . threadDelay 
 
 newtype TVar a = TVar (IORef a) 
 newTVar :: a -> STM (TVar a)
