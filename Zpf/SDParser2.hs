@@ -1,3 +1,4 @@
+{-# LANGUAGE Arrows #-}
 import Data.List(union) 
 
 -- Swierstra & Duponcheel LL(1) parsers, arrow version
@@ -15,11 +16,20 @@ class Arrow a where
     (>>>) :: a b c -> a c d -> a b d
     first :: a b c -> a (b,d) (c,d)
 
+instance Arrow (->) where
+  arr = id
+  (>>>) = flip (.)
+  first f (a, b) = (f a, b)
+
 instance Arrow (DynamicParser s) where
   arr f =  (DP (\(a,xs) -> (f a, xs)))
-  (>>>) = undefined
-  first = undefined
-  
+  (DP p1) >>> (DP p2) = DP $ p1 >>> p2 
+  -- first (DP p) = DP $ \((b,d),xs) -> let (c,ys) = p (b,xs) in ((c,d),ys)
+  first (DP p) = DP $ rot >>> first p >>> rot where
+    rot ((b,s),d) = ((b,d),s)
+  -- p :: (b,[s]) -> (c,[s])
+  -- first p :: ((b,[s]),d) -> ((c,[s]),d)
+
 instance Eq s => Arrow (Parser s) where
    arr f = P (SP True []) (arr f)
    
