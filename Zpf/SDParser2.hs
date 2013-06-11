@@ -4,7 +4,7 @@ import Data.List(union)
 -- Swierstra & Duponcheel LL(1) parsers, arrow version
 
 -- static kinfo: nullable, First
-data StaticParser s = SP { spNullable :: Bool, spFirst :: [s] } 
+data StaticParser s = SP { spNullable :: Bool, spFirst :: [s] } deriving Show
 newtype DynamicParser s a b = DP {runDP :: (a,[s]) -> (b,[s]) }
 data Parser s a b = P (StaticParser s)(DynamicParser s a b)
 
@@ -25,6 +25,31 @@ eps f = P (SP True []) (DP $ first f)
 
 symbol :: s -> Parser s a s
 symbol s = P (SP False [s]) (DP (\(a,x:xs) -> (s,xs)))
+
+{-
+many,many1 :: Eq s => Parser s a a -> Parser s a [a]
+many p = many1 p <+> eps undefined
+many1 p = p >>> many p
+-}
+many,many1 :: Eq s => Parser s a a -> Parser s a [a]
+-- many,many1 :: Parser s () a -> Parser s () [a]
+-- many ~ many1 <|> eps
+many (P sp dp) = P (SP True (spFirst sp)) (manyDP sp dp) 
+
+manyDP sp = DP . manyDPF sp. runDP
+manyDPF sp dp (_,[]) = ([],[])
+manyDPF sp dp (a,xs@(x:_)) 
+     | x `elem` spFirst sp = many1DPF sp dp (a,xs)
+     | otherwise = ([],xs)
+
+many1 (P sp  dp) = P sp (many1DP sp dp) 
+many1DP sp = DP . many1DPF sp . runDP
+-- many1DPF :: Eq s => StaticParser s -> ((a,[s]) -> (a,[s])) -> (a,[s]) -> ([a],[s]) 
+many1DPF sp dp (a,xs) = let
+ (a',xs') = dp (a,xs) 
+ (as,xs'') = manyDPF sp dp (a',xs')
+ in (a':as,xs'')   
+
 
 class Arrow a where
     arr   :: (b->c) ->  a b c
