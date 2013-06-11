@@ -5,8 +5,23 @@ import Data.List(union)
 
 -- static kinfo: nullable, First
 data StaticParser s = SP { spNullable :: Bool, spFirst :: [s] } 
-newtype DynamicParser s a b = DP( (a,[s]) -> (b,[s]) )
+newtype DynamicParser s a b = DP {runDP :: (a,[s]) -> (b,[s]) }
 data Parser s a b = P (StaticParser s)(DynamicParser s a b)
+
+parse1 :: Parser Char () b -> [Char] -> (b,[Char])
+parse1 (P sp dp) [] 
+ | spNullable sp = runDP dp ((),[])
+ | otherwise = error "unexpected EOT"
+parse1 (P sp dp) xs@(x:_)
+ | x `elem` spFirst sp = runDP dp ((),xs)
+ | otherwise = error $ unwords
+    ["unexpected",show x, "expecting one of", showList (spFirst sp) ""]
+
+test1 = parse1 (eps_ 1) ""
+eps_ :: b -> Parser s () b
+eps_ b = eps (const b)
+eps :: (a -> b) -> Parser s a b
+eps f = P (SP True []) (DP $ first f)
 
 symbol :: s -> Parser s a s
 symbol s = P (SP False [s]) (DP (\(a,x:xs) -> (s,xs)))
