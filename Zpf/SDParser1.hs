@@ -5,8 +5,33 @@ import Data.Functor((<$>))
 
 -- static kinfo: nullable, First
 data StaticParser s = SP { spNullable :: Bool, spFirst :: [s] } 
-newtype DynamicParser s a = DP([s] -> (a,[s]))
+newtype DynamicParser s a = DP{runDP :: [s] -> (a,[s])}
 data Parser s a = P (StaticParser s)(DynamicParser s a)
+
+parse1 :: Parser Char a -> [Char] -> (a,[Char])
+parse1 (P sp dp) [] 
+ | spNullable sp = runDP dp []
+ | otherwise = error "unexpected EOT"
+parse1 (P sp dp) xs@(x:_)
+ | x `elem` spFirst sp = runDP dp xs
+ | otherwise = error $ unwords
+    ["unexpected",show x, "expecting one of", showList (spFirst sp) ""]
+
+
+test1 = parse1 (eps 1) ""
+eps :: a -> Parser s a
+eps = pure
+
+many :: Eq s => Parser s a -> Parser s [a]
+many (P sp dp) = P (SP True (spFirst sp)) (manyDP sp dp) 
+manyDP sp = DP . manyDPF sp. runDP
+manyDPF sp dpf [] 
+  | spNullable sp = ([],[])
+  | otherwise = error "unexpected EOT"
+manyDPF sp dpf xs@(x:_) | x `elem` spFirst sp = let 
+    (a,xs') = dpf xs   
+    (as,xs'') = manyDPF sp dpf xs'
+ in (a:as,xs'')
 
 symbol :: s -> Parser s s
 symbol s = P (SP False [s]) (DP (\(x:xs) -> (s,xs)))
