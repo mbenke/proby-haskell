@@ -14,10 +14,15 @@ brackets ts = "[" <> hcat (intersperse "," ts) <> "]"
 braces t = "{" <> t <> "}"
 -- brackets 
 
+documentclass c = command "documentclass" c
+documentclass' opt c = command' "documentclass" opt c
 article :: Tex
 article = article' []
 article' :: [Tex] -> Tex
-article' opt = command' "documentclass" opt "article"
+article' opt = documentclass' opt "article"
+beamer = documentclass "beamer"
+
+usepackage p = command "usepackage" p
 
 environment name body = command "begin" name // body // command "end" name
 document body = environment "document" body
