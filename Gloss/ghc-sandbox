@@ -1,0 +1,3 @@
+#!/bin/sh
+
+ghc -no-user-package-db -package-db .cabal-sandbox/i386-osx-ghc-7.6.3-packages.conf.d $*
