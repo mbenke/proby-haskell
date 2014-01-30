@@ -2,4 +2,5 @@
 *.hi
 *.o
 .cabal\*
+*/.cabal-sandbox
 cabal.sandbox.config
