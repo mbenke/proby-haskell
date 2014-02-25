@@ -3,6 +3,9 @@ module BST where
 data Tree a = Tip | Bin !Size a (Tree a) (Tree a) deriving Show 
 type Size = Int
 
+empty :: Tree a
+empty = Tip
+
 toList :: Tree a -> [a]
 toList t = go t [] where
   go :: Tree a -> [a] -> [a]
@@ -83,8 +86,11 @@ bbin x Tip r@(Bin _ _ rl rr) = (if depth rr > depth rl then rot1L else rot2L) $ 
 bbin x l@(Bin _ _ ll lr) Tip = (if depth ll > depth lr then rot1R else rot2R) $ bin x l Tip
 bbin x Tip Tip = leaf x
 
+insert :: (Ord a) => a -> Tree a -> Tree a
 insert x Tip = bin x Tip Tip
 insert x (Bin _ y l r) | x < y = bbin y (insert x l) r
                        | otherwise = bbin y l (insert x r)
 
+
+fromList :: (Ord a) => [a] -> Tree a
 fromList xs = foldr insert Tip xs
