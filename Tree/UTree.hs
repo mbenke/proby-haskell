@@ -7,6 +7,15 @@ data Tree a
   | Tri (Tree a) a (Tree a) a (Tree a)
   deriving Show
 
+depth Tip = 0
+depth (Bin l _ r) = 1 + max (depth l) (depth r)
+depth (Tri l _ m _ r) = 1 + max (max (depth l) (depth m)) (depth r)
+
+balanced :: Tree a -> Bool
+balanced Tip = True
+balanced (Bin l _ r) = depth l == depth r
+balanced (Tri l _ m _ r) = depth l == d && d == depth r where d = depth m
+
 empty :: Tree a 
 empty = Tip
 
