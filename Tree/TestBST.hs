@@ -5,6 +5,7 @@ import Data.List(sort)
 
 import BST
 
+main = test
 test = do
      writeln "Rotations:"
      quickCheck propRot1LSeq
@@ -14,8 +15,16 @@ test = do
      writeln "Test fromList"
      quickCheck propFromListBalanced
      quickCheck propFromListBag
+     writeln "Test maxdepth"
+     quickCheck propMaxDepth
 
-main = test
+log2 :: Integral a => a -> a
+log2 n | n < 0 = error "log2: negative argument" 
+       | n < 2 = 1
+       | otherwise = 1 + log2 (quot n 2)
+
+propMaxDepth :: [Int] -> Bool
+propMaxDepth xs = depth (fromList xs) <= 2*n+1 where n = log2 (length xs)
 
 propRot1LSeq :: Tree Int -> Bool
 propRot1LSeq t = toList t == toList (rot1L t)
