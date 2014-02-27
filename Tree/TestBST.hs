@@ -17,15 +17,27 @@ test = do
      quickCheck propFromListBag
      writeln "Test maxdepth"
      quickCheck propMaxDepth
-
-log2 :: Integral a => a -> a
-log2 n | n < 0 = error "log2: negative argument" 
-       | n < 2 = 1
-       | otherwise = 1 + log2 (quot n 2)
+     quickCheck propMinDepth
 
 propMaxDepth :: [Int] -> Bool
 propMaxDepth xs = depth (fromList xs) <= 2*n+1 where n = log2 (length xs)
 
+propMinDepth :: [Int] -> Bool
+propMinDepth xs = depth (fromList xs) >= n `div` 2 where n = log2 (length xs)
+
+log2 :: Integral a => a -> a
+log2 n | n < 0 = error "log2: negative argument" 
+       | n < 2 = 0
+       | otherwise = 1 + log2 (div n 2)
+
+-- imLog :: Integer->Integer->Integer
+imLog b x |  x < b = 0
+ | otherwise = let
+          l = 2 * imLog (b*b) x
+          doDiv x l = if x < b then l else doDiv (x`div`b) (l+1)
+        in
+           doDiv (x`div`(b^l)) l
+ 
 propRot1LSeq :: Tree Int -> Bool
 propRot1LSeq t = toList t == toList (rot1L t)
 
