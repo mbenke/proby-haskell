@@ -48,7 +48,7 @@ toList t = go t [] where
   go (Tri l x m y r) = go l . (x:) . (go m) . (y:) . go r
 
 data Carry a = NoCarry | Carry a (Tree a) -- assume Carry a t ensures t <= a
-
+  deriving Show
 insert x t = case addEl x t of
   (t, NoCarry) -> t
   (t, Carry a t1) -> Bin t1 a t
@@ -66,7 +66,7 @@ addEl a (Bin t1 m t2)
         (Tri t0 y t1' m t2, NoCarry) 
  | a >= m = case addEl a t2 of
      (t2', NoCarry) -> (Bin t1 m t2', NoCarry)
-     (t2', Carry y t0) -> (Tri t1 m t2' y t2, NoCarry)
+     (t2', Carry y t0) -> (Tri t1 m t0 y t2', NoCarry)
 addEl a (Tri t1 x t2 y t3) 
  | a < x = case addEl a t1 of 
      (t1', NoCarry) -> (Tri t1' x t2 y t3, NoCarry)
@@ -78,5 +78,5 @@ addEl a (Tri t1 x t2 y t3)
        (Bin t2' y t3, Carry z (Bin t0 x t1))  
  | a >= y = case addEl a t3 of
      (t3', NoCarry) -> (Tri t1 x t2 y t3', NoCarry)
-     (t3', Carry z t0) -> -- t2 < y < t0 < z 
+     (t3', Carry z t0) -> -- t2 < y < t0 < z < t3', 
        (Bin t0 z t3', Carry y (Bin t1 x t2))
