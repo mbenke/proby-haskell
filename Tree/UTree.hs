@@ -67,15 +67,17 @@ addEl a (Bin t1 m t2)
  | a >= m = case addEl a t2 of
      (t2', NoCarry) -> (Bin t1 m t2', NoCarry)
      (t2', Carry y t0) -> (Tri t1 m t0 y t2', NoCarry)
-addEl a (Tri t1 x t2 y t3) 
+addEl a t@(Tri t1 x t2 y t3) 
  | a < x = case addEl a t1 of 
      (t1', NoCarry) -> (Tri t1' x t2 y t3, NoCarry)
      (t1', Carry z t0) -> -- t0 < z < x
-       (Bin t2 y t3, Carry x (Bin t0 z t1'))  
- | a < y = case addEl a t2 of 
+       (Bin t2 y t3, Carry x (Bin t0 z t1'))
+    
+ | a>=x && a < y = case addEl a t2 of 
      (t2', NoCarry) -> (Tri t1 x t2' y t3, NoCarry)
      (t2', Carry z t0) -> -- t1 < x< t0 < z < y
-       (Bin t2' y t3, Carry z (Bin t0 x t1))  
+       (Bin t2' y t3, Carry z (Bin t1 x t0))  
+ 
  | a >= y = case addEl a t3 of
      (t3', NoCarry) -> (Tri t1 x t2 y t3', NoCarry)
      (t3', Carry z t0) -> -- t2 < y < t0 < z < t3', 
