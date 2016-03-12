@@ -1,5 +1,5 @@
 -- {-# LANGUAGE NoMonomorphismRestriction #-}
-import Test.QuickCheck
+import Test.QuickCheck hiding((===))
 import Control.Monad(liftM2)
 import Control.Applicative((<$>),(<*>))
 
